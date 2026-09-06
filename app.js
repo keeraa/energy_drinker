@@ -19,7 +19,7 @@ const COUNTRIES = [
     ['Aziano Energy Fly Zero','can'],
     ['Aziano Energy Power Zero','can'],
     ['Barinoff Alligator Original','can'],
-    ['Barinoff Alligator Манго-Кокос','can'],
+    ['Barinoff Energy Манго-Кокос','bottle'],
     ['BIZON Original','can'],
     ['BIZON Малина','can'],
     ['Black Energy Original','can'],
@@ -380,7 +380,7 @@ const CURATED_PHOTOS = [
   { match:'Байкал Natural Energy Кофе-Лимон', exact:true, url:'assets/images/extra-081.jpg' },
   { match:'Брянскпиво Energy Original', exact:true, url:'assets/images/fixed-bryansk.png' },
   { match:'Крым Energy Original', exact:true, url:'assets/images/extra-083.jpg' },
-  { match:'НЕФТЬ Лайм', exact:true, url:'assets/images/extra-084.jpg' },
+  { match:'НЕФТЬ Лайм', exact:true, url:'assets/images/fixed-neft-mango-coconut.png' },
   { match:'НЕФТЬ Манго-Кокос', exact:true, url:'assets/images/fixed-neft-mango-coconut.png' },
   { match:'ОЗВЕРИН Original', exact:true, url:'assets/images/extra-086.png' },
   { match:'Энергия Первых Original', exact:true, url:'assets/images/extra-087.jpg' },
@@ -490,8 +490,8 @@ const CURATED_PHOTOS = [
   { match:'Volt Energy Апельсин-Маракуйя', exact:true, url:'https://img.nedostavka.net/66fd3b6e4248d30ea2564400' },
   { match:'Volt Energy Киви-Фейхоа', exact:true, url:'https://imgproxy.kuper.ru/imgproxy/size-500-500/czM6Ly9zYi1vYnMtcHJvZC1jb250ZW50LWltYWdlczAxL3Byb2R1Y3RzLzQ3MTU2ODg0L29yaWdpbmFsLzEvMjAyNS0wNi0yNCUyMDEzJTNBMzMlM0E1Mi4zMzE5ODklMkIwMCUzQTAwLzQ3MTU2ODg0XzEuanBn.jpg' },
   { match:'Volt Energy Грейпфрут-Клубника', exact:true, url:'https://images-foodtech.magnit.ru/Gtz6HN6FOpvO13AL5coMxMclLndcle9SykzowxsnLng/rs%3Afit%3A1600%3A1600/plain/s3%3A/img-dostavka/catalog/uf/ce9/ce9a6b7e2db2f16c3be2d303fc0eace9/6016b3e38a73f91265ef4c63344d3dc0.jpeg%40webp' },
-  // Россия — Barinoff Alligator
-  { match:'Barinoff Alligator Манго-Кокос', exact:true, url:'https://www.barista-ltd.ru/components/com_jshopping/files/img_products/Barinoff-energy-drink_Alligator-new_Mango-Coconut_1.jpg' },
+  // Россия — Barinoff
+  { match:'Barinoff Energy Манго-Кокос', exact:true, url:'assets/images/fixed-barinoff-energy-mango-coconut.png' },
   { match:'Barinoff Alligator', url:'https://www.barista-ltd.ru/components/com_jshopping/files/img_products/Barinoff-energy-drink_Alligator-Original_1.jpg' },
   { match:'Aziano Energy Fly Zero', exact:true, url:'https://napitkiopt.ru/wa-data/public/shop/products/35/30/3035/images/2609/2609.970.jpg' },
   { match:'Aziano Energy Power Zero', exact:true, url:'https://images.satu.kz/239270829_w640_h640_239270829.jpg' },
@@ -550,7 +550,7 @@ function curatedPhotoFor(name){
 }
 
 const DRINK_BRANDS = [
-  'Adrenaline Rush','Barinoff Alligator','Jaguar Wild Energy','Monster Energy',
+  'Adrenaline Rush','Barinoff Alligator','Barinoff Energy','Jaguar Wild Energy','Monster Energy',
   'Tornado Max Energy','Tornado Energy','X-Turbo Energy','X-Turbo Focus Energy','BY БАСТА',
   'Power Torr','Flash Energy','Flash Up','LIT Energy','Volt Energy','Drive Me',
   'Aziano Energy','Coca-Cola Energy','Red Bull','Black Monster','Black Energy','Revo Energy',
@@ -581,9 +581,11 @@ let tried = new Set();       // set of ids
 let photos = {};             // id -> dataURL (base64, resized)
 let top3 = [null, null, null];
 let ratings = {};            // id -> 1..5
+let hidden = new Set();      // drinks the user does not plan to try
 let activeCountry = COUNTRIES[0].key;
 let activeTab = 'browse';
 let searchQuery = '';
+let showHidden = false;
 let lastRankMin = null;
 
 const ratingDialog = document.getElementById('ratingDialog');
@@ -591,6 +593,7 @@ const ratingName = document.getElementById('ratingName');
 const ratingStars = Array.from(document.querySelectorAll('.rating-star'));
 const ratingClose = document.getElementById('ratingClose');
 const ratingRemove = document.getElementById('ratingRemove');
+const ratingSkip = document.getElementById('ratingSkip');
 let ratingTargetId = null;
 let ratingReturnFocus = null;
 
@@ -610,6 +613,7 @@ function openRatingDialog(id, returnFocus){
   ratingName.textContent = found.drink[0];
   paintRatingStars(Number(ratings[id]) || 0);
   ratingRemove.classList.toggle('visible', tried.has(id));
+  ratingSkip.textContent = hidden.has(id) ? 'Вернуть в общий список' : 'Я не буду это пробовать';
   ratingDialog.classList.add('open');
   ratingDialog.setAttribute('aria-hidden', 'false');
   document.body.classList.add('dialog-open');
@@ -633,7 +637,8 @@ ratingStars.forEach(star => {
     if(!ratingTargetId) return;
     ratings[ratingTargetId] = value;
     tried.add(ratingTargetId);
-    await Promise.all([saveRatings(), saveTried()]);
+    hidden.delete(ratingTargetId);
+    await Promise.all([saveRatings(), saveTried(), saveHidden()]);
     closeRatingDialog();
     renderAll();
   });
@@ -652,6 +657,21 @@ ratingRemove.addEventListener('click', async () => {
   delete ratings[removedId];
   top3 = top3.map(id => id === removedId ? null : id);
   await Promise.all([saveTried(), saveRatings(), saveTop3()]);
+  closeRatingDialog();
+  renderAll();
+});
+ratingSkip.addEventListener('click', async () => {
+  if(!ratingTargetId) return;
+  const id = ratingTargetId;
+  if(hidden.has(id)){
+    hidden.delete(id);
+  }else{
+    hidden.add(id);
+    tried.delete(id);
+    delete ratings[id];
+    top3 = top3.map(topId => topId === id ? null : topId);
+  }
+  await Promise.all([saveHidden(), saveTried(), saveRatings(), saveTop3()]);
   closeRatingDialog();
   renderAll();
 });
@@ -699,7 +719,8 @@ const storage = window.storage?.get && window.storage?.set
 
 const LEGACY_IDS = new Map([
   [idFor('asia', 'Kratingdaeng'), idFor('asia', 'Krating Daeng')],
-  [idFor('asia', 'Lipovitan'), idFor('asia', 'Lipovitan-D')]
+  [idFor('asia', 'Lipovitan'), idFor('asia', 'Lipovitan-D')],
+  [idFor('ru', 'Barinoff Alligator Манго-Кокос'), idFor('ru', 'Barinoff Energy Манго-Кокос')]
 ]);
 
 function migrateId(id){
@@ -725,11 +746,12 @@ async function writeStoredJSON(key, value){
 }
 
 async function loadState(){
-  const [savedTried, savedPhotos, savedTop3, savedRatings] = await Promise.all([
+  const [savedTried, savedPhotos, savedTop3, savedRatings, savedHidden] = await Promise.all([
     readStoredJSON('tried-ids', []),
     readStoredJSON('photos', {}),
     readStoredJSON('top3', [null, null, null]),
-    readStoredJSON('ratings', {})
+    readStoredJSON('ratings', {}),
+    readStoredJSON('hidden-ids', [])
   ]);
 
   photos = savedPhotos && typeof savedPhotos === 'object' ? savedPhotos : {};
@@ -756,6 +778,17 @@ async function loadState(){
     return id;
   });
 
+  hidden = new Set(
+    (Array.isArray(savedHidden) ? savedHidden : [])
+      .map(migrateId)
+      .filter(id => DRINK_INDEX.has(id))
+  );
+  hidden.forEach(id => {
+    tried.delete(id);
+    delete ratings[id];
+    top3 = top3.map(topId => topId === id ? null : topId);
+  });
+
   renderAll();
 }
 
@@ -763,6 +796,7 @@ function saveTried(){ return writeStoredJSON('tried-ids', Array.from(tried)); }
 function savePhotos(){ return writeStoredJSON('photos', photos); }
 function saveTop3(){ return writeStoredJSON('top3', top3); }
 function saveRatings(){ return writeStoredJSON('ratings', ratings); }
+function saveHidden(){ return writeStoredJSON('hidden-ids', Array.from(hidden)); }
 
 // Сжимаем загруженное фото до маленького квадрата, чтобы уложиться в лимиты хранилища
 function resizeImage(file){
@@ -851,6 +885,7 @@ function buildCard(countryKey, drink){
   const [name] = drink;
   const id = idFor(countryKey, name);
   const isTried = tried.has(id);
+  const isHidden = hidden.has(id);
   const rating = Number(ratings[id]) || 0;
   const nameParts = drinkNameParts(name);
 
@@ -859,7 +894,7 @@ function buildCard(countryKey, drink){
   const photoUrl = userPhoto || brandPhoto;
 
   const card = document.createElement('div');
-  card.className = 'card' + (isTried ? ' tried' : '') + (rating ? ' has-rating' : '');
+  card.className = 'card' + (isTried ? ' tried' : '') + (rating ? ' has-rating' : '') + (isHidden ? ' is-hidden' : '');
   card.draggable = true;
   card.setAttribute('role', 'button');
   card.setAttribute('tabindex', '0');
@@ -962,6 +997,7 @@ function renderCountryRow(){
     pill.innerHTML = `<span class="flag">${c.flag}</span> ${c.label} <span class="n">${count}/${c.drinks.length}</span>`;
     pill.addEventListener('click', ()=>{
       activeCountry = c.key;
+      showHidden = false;
       setTab('browse');
     });
     row.appendChild(pill);
@@ -991,11 +1027,29 @@ function renderGrid(){
   const grid = document.getElementById('grid');
   grid.innerHTML = '';
   const normalizedQuery = searchQuery.trim().toLocaleLowerCase('ru');
-  const visibleDrinks = normalizedQuery
+  const matchingDrinks = normalizedQuery
     ? country.drinks.filter(drink => drink[0].toLocaleLowerCase('ru').includes(normalizedQuery))
     : country.drinks;
-  visibleDrinks.forEach(drink=>grid.appendChild(buildCard(country.key, drink)));
-  if(!visibleDrinks.length){
+  const visibleDrinks = matchingDrinks.filter(drink => !hidden.has(idFor(country.key, drink[0])));
+  const hiddenDrinks = matchingDrinks.filter(drink => hidden.has(idFor(country.key, drink[0])));
+
+  visibleDrinks.forEach(drink => grid.appendChild(buildCard(country.key, drink)));
+  if(hiddenDrinks.length){
+    const toggle = document.createElement('button');
+    toggle.className = 'hidden-toggle';
+    toggle.type = 'button';
+    toggle.textContent = showHidden ? 'Скрыть скрытые' : 'Показать скрытые';
+    toggle.setAttribute('aria-expanded', String(showHidden));
+    toggle.addEventListener('click', () => {
+      showHidden = !showHidden;
+      renderGrid();
+    });
+    grid.appendChild(toggle);
+    if(showHidden){
+      hiddenDrinks.forEach(drink => grid.appendChild(buildCard(country.key, drink)));
+    }
+  }
+  if(!matchingDrinks.length){
     grid.innerHTML = '<div class="my-empty" style="grid-column:1/-1">Ничего не найдено</div>';
   }
 }

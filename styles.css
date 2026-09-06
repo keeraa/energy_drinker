@@ -45,7 +45,8 @@
   .brand-mark{
     width:60px;height:60px;
     border-radius:12px;
-    object-fit:cover;
+    object-fit:contain;
+    background:#05070a;
     display:block;
     flex:none;
   }
@@ -411,6 +412,19 @@
   }
   .rating-star:hover{transform:scale(1.08);}
   .rating-star.filled{color:#ffd65a;}
+  .rating-skip{
+    display:block;
+    margin:0 auto 4px;
+    padding:7px 10px;
+    border:0;
+    background:transparent;
+    color:var(--text-dim);
+    font:600 12px/1.25 'Inter',sans-serif;
+    text-decoration:underline;
+    text-underline-offset:3px;
+    cursor:pointer;
+  }
+  .rating-skip:hover{color:var(--text);}
   .rating-remove{
     display:none;
     margin:6px auto 0;
@@ -500,6 +514,21 @@
     font-size:34px;
     margin-bottom:10px;
   }
+  .hidden-toggle{
+    grid-column:1/-1;
+    width:100%;
+    margin:6px 0 2px;
+    padding:13px 16px;
+    border:1px solid var(--line);
+    border-radius:13px;
+    background:var(--panel);
+    color:var(--text-dim);
+    font:600 13px/1.2 'Inter',sans-serif;
+    cursor:pointer;
+  }
+  .hidden-toggle:hover{border-color:#3a4356;color:var(--text);}
+  .card.is-hidden{opacity:.66;}
+  .card.is-hidden:hover{opacity:.9;}
   .my-group{margin-bottom:26px;}
   .top3{margin-bottom:28px;}
   .top3-title{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;margin-bottom:12px;}
