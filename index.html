@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Вольтаж — личный дневник дегустаций и рейтинг энергетических напитков.">
+<meta name="theme-color" content="#0b0e13">
+<meta name="color-scheme" content="dark">
+<title>ВОЛЬТАЖ — трекер энергетиков</title>
+<link rel="icon" type="image/png" href="assets/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+  <div class="brand-row">
+    <div class="brand">
+      <img class="brand-mark" src="assets/icon.png" alt="Вольтаж">
+      <div>
+        <div class="brand-title">Вольтаж</div>
+        <div class="brand-sub">Дневник дегустаций энергетиков</div>
+      </div>
+    </div>
+    <div class="rank-chip">
+      <div style="font-size:22px;" id="rankEmoji">🔋</div>
+      <div>
+        <div class="rank-name" id="rankName">Лох</div>
+        <div class="rank-count" id="rankCount">0 из 0 попробовано</div>
+        <div class="rank-bar-track"><div class="rank-bar-fill" id="rankBar" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<nav aria-label="Основная навигация">
+  <button class="tab-btn active" data-tab="browse" aria-pressed="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2l-2 10h9l-9 10l2-10h-9z"/></svg>
+    <span>Энергетики</span>
+  </button>
+  <button class="tab-btn" data-tab="mine" aria-pressed="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 12.572l-7.5 7.428l-7.5-7.428a5 5 0 1 1 7.5-6.566a5 5 0 1 1 7.5 6.572"/></svg>
+    <span>Я пробовала <span id="mineTabCount"></span></span>
+  </button>
+  <button class="tab-btn" data-tab="ranks" aria-pressed="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v8a5 5 0 0 1 -10 0z"/><path d="M7 5l-4 2v2a4 4 0 0 0 4 4"/><path d="M17 5l4 2v2a4 4 0 0 1 -4 4"/></svg>
+    <span>Мой уровень</span>
+  </button>
+</nav>
+
+<div class="country-row" id="countryRow"></div>
+
+<main>
+  <div id="view-browse">
+    <div class="section-head" hidden aria-hidden="true">
+      <div class="section-title" id="countryTitle">—</div>
+      <div class="section-meta" id="countryMeta"></div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <div id="view-mine" style="display:none;">
+    <div class="top3" id="top3">
+      <div class="top3-title">Лучшие энергетики в мире</div>
+      <div class="podium-grid" id="podiumGrid"></div>
+    </div>
+    <div class="section-head">
+      <div class="section-title">Я пробовала</div>
+      <div class="section-meta" id="mineMeta"></div>
+    </div>
+    <div id="mineContent"></div>
+  </div>
+
+  <div id="view-ranks" style="display:none;">
+    <div class="section-head">
+      <div class="section-title">Мой уровень</div>
+      <div class="section-meta">Уровень растёт вместе с долей изученного каталога</div>
+    </div>
+    <div class="level-summary" id="levelSummary"></div>
+    <div class="ranks-wrap" id="ranksWrap"></div>
+  </div>
+</main>
+
+
+<div class="rating-dialog" id="ratingDialog" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="ratingName">
+  <div class="rating-panel">
+    <button class="rating-close" id="ratingClose" type="button" aria-label="Закрыть">×</button>
+    <div class="rating-kicker">Ваша оценка</div>
+    <div class="rating-name" id="ratingName"></div>
+    <div class="rating-stars" id="ratingStars" aria-label="Оценка от 1 до 5 звёзд">
+      <button class="rating-star" type="button" data-value="1" aria-label="1 звезда">☆</button>
+      <button class="rating-star" type="button" data-value="2" aria-label="2 звезды">☆</button>
+      <button class="rating-star" type="button" data-value="3" aria-label="3 звезды">☆</button>
+      <button class="rating-star" type="button" data-value="4" aria-label="4 звезды">☆</button>
+      <button class="rating-star" type="button" data-value="5" aria-label="5 звёзд">☆</button>
+    </div>
+    <button class="rating-remove" id="ratingRemove" type="button">Убрать из «Я пробовала»</button>
+  </div>
+</div>
+
+<div class="image-viewer" id="imageViewer" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Просмотр изображения">
+  <button class="image-viewer-close" id="imageViewerClose" type="button" aria-label="Закрыть">×</button>
+  <figure class="image-viewer-figure">
+    <img id="imageViewerPhoto" alt="">
+    <figcaption class="image-viewer-caption" id="imageViewerCaption"></figcaption>
+  </figure>
+</div>
+<script src="app.js" defer></script>
+
+</body>
+</html>
