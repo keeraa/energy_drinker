@@ -178,7 +178,6 @@ const COUNTRIES = [
     ['WK UP Original','can'],
     ['X-Turbo Energy Active Ежевика-Малина','can'],
     ['X-Turbo Focus Energy Original','can'],
-    ['Армия России Original','can'],
     ['Байкал Natural Energy Кофе-Лимон','can'],
     ['Байкал Natural Energy Малина-Дикая смородина','can'],
     ['Брянскпиво Energy Original','can'],
@@ -378,7 +377,6 @@ const CURATED_PHOTOS = [
   { match:'WK UP Original', exact:true, url:'assets/images/fixed-wkup-original.jpg' },
   { match:'X-Turbo Energy Active Ежевика-Малина', exact:true, url:'assets/images/extra-078.jpg' },
   { match:'X-Turbo Focus Energy Original', exact:true, url:'assets/images/extra-079.webp' },
-  { match:'Армия России Original', exact:true, url:'assets/images/extra-080.jpg' },
   { match:'Байкал Natural Energy Кофе-Лимон', exact:true, url:'assets/images/extra-081.jpg' },
   { match:'Брянскпиво Energy Original', exact:true, url:'assets/images/fixed-bryansk.png' },
   { match:'Крым Energy Original', exact:true, url:'assets/images/extra-083.jpg' },
@@ -559,7 +557,7 @@ const DRINK_BRANDS = [
   'Tassay Energy','2K Energy','100кВт','BIZON','Bullit','Burn','Double You',
   'Dracula','E-ON','Effect','EnerGO','Genesis','Gorilla','HotCat','Invoke',
   'JUSTER','Monster','Nature Rush','PulseUp','SPAR','Target','VELOCITY','WK UP',
-  'Армия России','Байкал Natural Energy','Брянскпиво Energy',
+  'Байкал Natural Energy','Брянскпиво Energy',
   'Крым Energy','НЕФТЬ','ОЗВЕРИН','Энергия Первых'
 ].sort((a,b) => b.length - a.length);
 
@@ -900,7 +898,7 @@ function buildCard(countryKey, drink){
 
   const card = document.createElement('div');
   card.className = 'card' + (isTried ? ' tried' : '') + (rating ? ' has-rating' : '') + (isHidden ? ' is-hidden' : '');
-  card.draggable = activeTab === 'mine';
+  card.draggable = activeTab === 'mine' && window.matchMedia('(hover:hover) and (pointer:fine)').matches;
   card.setAttribute('role', 'button');
   card.setAttribute('tabindex', '0');
   card.setAttribute('aria-pressed', isTried ? 'true' : 'false');
@@ -922,6 +920,7 @@ function buildCard(countryKey, drink){
       <div class="card-rating" aria-hidden="true">★ ${rating}</div>
       <div class="badge-check">✓</div>
     </div>
+    ${activeTab === 'mine' ? '<button class="top3-drag-handle" type="button" aria-label="Перетащить энергетик в топ-3" title="Перетащить в топ-3">⠿</button>' : ''}
   `;
   card.addEventListener('dragstart', event => {
     event.dataTransfer.setData('text/plain', id);
@@ -939,6 +938,66 @@ function buildCard(countryKey, drink){
     }, { once:true });
   }
 
+  const dragHandle = card.querySelector('.top3-drag-handle');
+  if(dragHandle){
+    let dragGhost = null;
+    let targetSlot = null;
+    const clearTarget = () => {
+      if(targetSlot) targetSlot.classList.remove('over');
+      targetSlot = null;
+    };
+    const moveTouchDrag = event => {
+      if(!dragGhost) return;
+      event.preventDefault();
+      const rect = dragGhost.getBoundingClientRect();
+      dragGhost.style.transform = `translate(${event.clientX - rect.width / 2}px, ${event.clientY - rect.height / 2}px)`;
+      clearTarget();
+      targetSlot = document.elementFromPoint(event.clientX, event.clientY)?.closest('.podium-slot') || null;
+      if(targetSlot) targetSlot.classList.add('over');
+      if(event.clientY < 90) window.scrollBy(0, -14);
+      if(event.clientY > window.innerHeight - 90) window.scrollBy(0, 14);
+    };
+    const finishTouchDrag = () => {
+      if(!dragGhost) return;
+      const slot = targetSlot;
+      dragGhost.remove();
+      dragGhost = null;
+      clearTarget();
+      document.body.classList.remove('top3-dragging');
+      if(!slot) return;
+      const index = Array.from(document.querySelectorAll('.podium-slot')).indexOf(slot);
+      if(index < 0) return;
+      placeInTop3(index, id);
+    };
+    const cancelTouchDrag = () => {
+      if(!dragGhost) return;
+      dragGhost.remove();
+      dragGhost = null;
+      clearTarget();
+      document.body.classList.remove('top3-dragging');
+    };
+    dragHandle.addEventListener('pointerdown', event => {
+      if(event.pointerType === 'mouse' && event.button !== 0) return;
+      event.preventDefault();
+      event.stopPropagation();
+      dragHandle.setPointerCapture(event.pointerId);
+      const rect = card.getBoundingClientRect();
+      dragGhost = card.cloneNode(true);
+      dragGhost.className = 'card top3-drag-ghost';
+      dragGhost.style.width = rect.width + 'px';
+      document.body.appendChild(dragGhost);
+      document.body.classList.add('top3-dragging');
+      moveTouchDrag(event);
+    });
+    dragHandle.addEventListener('pointermove', moveTouchDrag);
+    dragHandle.addEventListener('pointerup', finishTouchDrag);
+    dragHandle.addEventListener('pointercancel', cancelTouchDrag);
+    dragHandle.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+    });
+  }
+
   let longPressTimer = null;
   let longPressOpened = false;
   const cancelLongPress = () => {
@@ -949,6 +1008,7 @@ function buildCard(countryKey, drink){
   };
   if(photoUrl){
     card.addEventListener('pointerdown', event => {
+      if(event.target.closest('.top3-drag-handle')) return;
       if(event.pointerType === 'mouse' && event.button !== 0) return;
       cancelLongPress();
       longPressOpened = false;
@@ -974,6 +1034,7 @@ function buildCard(countryKey, drink){
     });
   }
   card.addEventListener('click', (event) => {
+    if(event.target.closest('.top3-drag-handle')) return;
     if(longPressOpened){
       event.preventDefault();
       event.stopPropagation();
@@ -1090,6 +1151,14 @@ function drinkById(id){
   return DRINK_INDEX.get(id) || null;
 }
 
+async function placeInTop3(index, id){
+  if(index < 0 || index > 2 || !drinkById(id)) return;
+  top3 = top3.map(existingId => existingId === id ? null : existingId);
+  top3[index] = id;
+  await saveTop3();
+  renderTop3();
+}
+
 function renderTop3(){
   const grid = document.getElementById('podiumGrid');
   if(!grid) return;
@@ -1121,10 +1190,7 @@ function renderTop3(){
       slot.classList.remove('over');
       const id = event.dataTransfer.getData('text/plain');
       if(!drinkById(id)) return;
-      top3 = top3.map(existingId => existingId === id ? null : existingId);
-      top3[index] = id;
-      await saveTop3();
-      renderTop3();
+      await placeInTop3(index, id);
     });
     grid.appendChild(slot);
   });
