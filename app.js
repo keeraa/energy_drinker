@@ -1183,8 +1183,22 @@ function setTab(tab){
   renderAll();
 }
 
-document.querySelectorAll('.tab-btn').forEach(b=>{
-  b.addEventListener('click', ()=>setTab(b.dataset.tab));
+document.querySelectorAll('.tab-btn').forEach(button => {
+  let touchHandled = false;
+  button.addEventListener('pointerup', event => {
+    if(event.pointerType !== 'touch' && event.pointerType !== 'pen') return;
+    event.preventDefault();
+    touchHandled = true;
+    setTab(button.dataset.tab);
+    window.setTimeout(() => { touchHandled = false; }, 500);
+  });
+  button.addEventListener('click', () => {
+    if(touchHandled){
+      touchHandled = false;
+      return;
+    }
+    setTab(button.dataset.tab);
+  });
 });
 
 // ---------- Master render ----------

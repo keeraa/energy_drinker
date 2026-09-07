@@ -156,7 +156,6 @@
   }
   .tab-btn svg{width:18px;height:18px;flex:none;stroke-width:2;}
   .tab-btn span{white-space:nowrap;}
-  .tab-btn:hover{color:var(--text); border-color:#3a4155;}
   .tab-btn.active{
     background:var(--text);
     color:#12151b;
@@ -684,4 +683,7 @@
   }
   @media (prefers-reduced-motion:reduce){
     .rank-chip.level-up{animation:none;outline:2px solid var(--volt);}
+  }
+  @media (hover:hover) and (pointer:fine){
+    .tab-btn:hover{color:var(--text);}
   }
