@@ -42,13 +42,24 @@
     align-items:center;
     gap:10px;
   }
+  .brand-mark-button{
+    display:block;
+    flex:none;
+    margin:0;
+    padding:0;
+    border:0;
+    border-radius:12px;
+    background:transparent;
+    color:inherit;
+    cursor:zoom-in;
+    -webkit-tap-highlight-color:transparent;
+  }
   .brand-mark{
     width:60px;height:60px;
     border-radius:12px;
     object-fit:contain;
     background:#05070a;
     display:block;
-    flex:none;
   }
   .brand-title{
     font-size:22px;

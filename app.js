@@ -704,6 +704,9 @@ imageViewerClose.addEventListener('click', closeImageViewer);
 imageViewer.addEventListener('click', event => {
   if(event.target === imageViewer) closeImageViewer();
 });
+document.getElementById('brandMarkButton').addEventListener('click', () => {
+  openImageViewer('assets/icon.png', 'SashEnergy');
+});
 document.addEventListener('keydown', event => {
   if(event.key === 'Escape' && imageViewer.classList.contains('open')) closeImageViewer();
   if(event.key === 'Escape' && ratingDialog.classList.contains('open')) closeRatingDialog();
