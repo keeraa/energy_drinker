@@ -250,7 +250,13 @@ COUNTRIES.forEach(c => {
   c.drinks.sort((a, b) => a[0].localeCompare(b[0], 'ru', { sensitivity:'base' }));
 });
 
-const TOTAL = COUNTRIES.reduce((s,c)=>s+c.drinks.length,0);
+// Единый каталог; ключ исходного раздела сохраняется только в ID, чтобы не потерять
+// уже выставленные оценки, скрытые позиции и состав топ-3.
+const CATALOG_ITEMS = COUNTRIES
+  .flatMap(country => country.drinks.map(drink => ({ country, drink })))
+  .sort((a, b) => a.drink[0].localeCompare(b.drink[0], 'ru', { sensitivity:'base' }));
+
+const TOTAL = CATALOG_ITEMS.length;
 
 const RANKS = [
   { min:0,                       name:'Лох',                 emoji:'🔋' },
@@ -378,7 +384,7 @@ const CURATED_PHOTOS = [
   { match:'Red Bull White Edition', exact:true, url:'assets/images/extra-063.jpg' },
   { match:'Red Bull Yellow Edition', exact:true, url:'assets/images/extra-064.jpg' },
   { match:'Revo Energy Original', exact:true, url:'assets/images/extra-065.png' },
-  { match:'SPAR Berry', exact:true, url:'assets/images/fixed-spar-berry.jpg' },
+  { match:'SPAR Berry', exact:true, url:'assets/images/spar-berry-product.png' },
   { match:'SPAR Kiwi-Apple', exact:true, url:'assets/images/fixed-spar-kiwi-apple.png' },
   { match:'Target Original', exact:true, url:'assets/images/extra-068.jpg' },
   { match:'Tassay Energy Original', exact:true, url:'assets/images/extra-069.png' },
@@ -396,7 +402,7 @@ const CURATED_PHOTOS = [
   { match:'Байкал Natural Energy Кофе-Лимон', exact:true, url:'assets/images/extra-081.jpg' },
   { match:'Брянскпиво Energy Original', exact:true, url:'assets/images/fixed-bryansk.png' },
   { match:'Крым Energy Original', exact:true, url:'assets/images/extra-083.jpg' },
-  { match:'НЕФТЬ Лайм', exact:true, url:'assets/images/neft-lime.jpg' },
+  { match:'НЕФТЬ Лайм', exact:true, url:'assets/images/neft-lime-product.png' },
   { match:'НЕФТЬ Манго-Кокос', exact:true, url:'assets/images/neft-mango-coconut.jpg' },
   { match:'ОЗВЕРИН Original', exact:true, url:'assets/images/extra-086.png' },
   { match:'Энергия Первых Original', exact:true, url:'assets/images/extra-087.jpg' },
@@ -524,7 +530,7 @@ const CURATED_PHOTOS = [
   { match:'Volt Energy Киви-Фейхоа', exact:true, url:'https://imgproxy.kuper.ru/imgproxy/size-500-500/czM6Ly9zYi1vYnMtcHJvZC1jb250ZW50LWltYWdlczAxL3Byb2R1Y3RzLzQ3MTU2ODg0L29yaWdpbmFsLzEvMjAyNS0wNi0yNCUyMDEzJTNBMzMlM0E1Mi4zMzE5ODklMkIwMCUzQTAwLzQ3MTU2ODg0XzEuanBn.jpg' },
   { match:'Volt Energy Грейпфрут-Клубника', exact:true, url:'https://images-foodtech.magnit.ru/Gtz6HN6FOpvO13AL5coMxMclLndcle9SykzowxsnLng/rs%3Afit%3A1600%3A1600/plain/s3%3A/img-dostavka/catalog/uf/ce9/ce9a6b7e2db2f16c3be2d303fc0eace9/6016b3e38a73f91265ef4c63344d3dc0.jpeg%40webp' },
   // Россия — Barinoff
-  { match:'Barinoff Energy Манго-Кокос', exact:true, url:'assets/images/fixed-barinoff-energy-mango-coconut.png' },
+  { match:'Barinoff Energy Манго-Кокос', exact:true, url:'assets/images/barinoff-energy-mango-coconut-product.png' },
   { match:'Barinoff Alligator', url:'https://www.barista-ltd.ru/components/com_jshopping/files/img_products/Barinoff-energy-drink_Alligator-Original_1.jpg' },
   { match:'Aziano Energy Fly Zero', exact:true, url:'https://napitkiopt.ru/wa-data/public/shop/products/35/30/3035/images/2609/2609.970.jpg' },
   { match:'Aziano Energy Power Zero', exact:true, url:'https://images.satu.kz/239270829_w640_h640_239270829.jpg' },
@@ -606,7 +612,7 @@ function idFor(countryKey, name){
 }
 
 const DRINK_INDEX = new Map(
-  COUNTRIES.flatMap(country => country.drinks.map(drink => [idFor(country.key, drink[0]), { country, drink }]))
+  CATALOG_ITEMS.map(({ country, drink }) => [idFor(country.key, drink[0]), { country, drink }])
 );
 
 // ---------- State ----------
@@ -615,7 +621,6 @@ let photos = {};             // id -> dataURL (base64, resized)
 let top3 = [null, null, null];
 let ratings = {};            // id -> 1..5
 let hidden = new Set();      // drinks the user does not plan to try
-let activeCountry = COUNTRIES[0].key;
 let activeTab = 'browse';
 let searchQuery = '';
 let showHidden = false;
@@ -1085,22 +1090,10 @@ function buildCard(countryKey, drink){
   return card;
 }
 
-// ---------- Render: country pills ----------
-function renderCountryRow(){
-  const row = document.getElementById('countryRow');
-  row.innerHTML = '';
-  COUNTRIES.forEach(c=>{
-    const count = c.drinks.filter(d=>tried.has(idFor(c.key,d[0]))).length;
-    const pill = document.createElement('button');
-    pill.className = 'country-pill' + (c.key===activeCountry && activeTab==='browse' ? ' active':'');
-    pill.innerHTML = `<span class="flag">${c.flag}</span> ${c.label} <span class="n">${count}/${c.drinks.length}</span>`;
-    pill.addEventListener('click', ()=>{
-      activeCountry = c.key;
-      showHidden = false;
-      setTab('browse');
-    });
-    row.appendChild(pill);
-  });
+// ---------- Render: catalog toolbar ----------
+function renderCatalogToolbar(){
+  const toolbar = document.getElementById('catalogToolbar');
+  toolbar.innerHTML = '';
   const search = document.createElement('label');
   search.className = 'catalog-search';
   search.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>';
@@ -1114,26 +1107,22 @@ function renderCountryRow(){
     renderGrid();
   });
   search.appendChild(input);
-  row.appendChild(search);
+  toolbar.appendChild(search);
 }
 
 // ---------- Render: browse grid ----------
 function renderGrid(){
-  const country = COUNTRIES.find(c=>c.key===activeCountry);
-  document.getElementById('countryTitle').textContent = country.flag + '  ' + country.label;
-  const count = country.drinks.filter(d=>tried.has(idFor(country.key,d[0]))).length;
-  document.getElementById('countryMeta').textContent = count + ' из ' + country.drinks.length + ' попробовано';
   const grid = document.getElementById('grid');
   grid.innerHTML = '';
   const normalizedQuery = searchQuery.trim().toLocaleLowerCase('ru');
-  const matchingDrinks = normalizedQuery
-    ? country.drinks.filter(drink => drink[0].toLocaleLowerCase('ru').includes(normalizedQuery))
-    : country.drinks;
-  const visibleDrinks = matchingDrinks.filter(drink => !hidden.has(idFor(country.key, drink[0])));
-  const hiddenDrinks = matchingDrinks.filter(drink => hidden.has(idFor(country.key, drink[0])));
+  const matchingItems = normalizedQuery
+    ? CATALOG_ITEMS.filter(({ drink }) => drink[0].toLocaleLowerCase('ru').includes(normalizedQuery))
+    : CATALOG_ITEMS;
+  const visibleItems = matchingItems.filter(({ country, drink }) => !hidden.has(idFor(country.key, drink[0])));
+  const hiddenItems = matchingItems.filter(({ country, drink }) => hidden.has(idFor(country.key, drink[0])));
 
-  visibleDrinks.forEach(drink => grid.appendChild(buildCard(country.key, drink)));
-  if(hiddenDrinks.length){
+  visibleItems.forEach(({ country, drink }) => grid.appendChild(buildCard(country.key, drink)));
+  if(hiddenItems.length){
     const toggle = document.createElement('button');
     toggle.className = 'hidden-toggle';
     toggle.type = 'button';
@@ -1145,10 +1134,10 @@ function renderGrid(){
     });
     grid.appendChild(toggle);
     if(showHidden){
-      hiddenDrinks.forEach(drink => grid.appendChild(buildCard(country.key, drink)));
+      hiddenItems.forEach(({ country, drink }) => grid.appendChild(buildCard(country.key, drink)));
     }
   }
-  if(!matchingDrinks.length){
+  if(!matchingItems.length){
     grid.innerHTML = '<div class="my-empty" style="grid-column:1/-1">Ничего не найдено</div>';
   }
 }
@@ -1166,13 +1155,9 @@ function renderMine(){
     return;
   }
 
-  const items = [];
-  COUNTRIES.forEach(country => {
-    country.drinks.forEach(drink => {
-      const id = idFor(country.key, drink[0]);
-      if(tried.has(id)) items.push({ country, drink, rating:Number(ratings[id]) || 0 });
-    });
-  });
+  const items = CATALOG_ITEMS
+    .filter(({ country, drink }) => tried.has(idFor(country.key, drink[0])))
+    .map(({ country, drink }) => ({ country, drink, rating:Number(ratings[idFor(country.key, drink[0])]) || 0 }));
   items.sort((a, b) => b.rating - a.rating || a.drink[0].localeCompare(b.drink[0], 'ru'));
   const grid = document.createElement('div');
   grid.className = 'grid';
@@ -1280,7 +1265,7 @@ function setTab(tab){
   document.getElementById('view-browse').style.display = tab==='browse' ? '' : 'none';
   document.getElementById('view-mine').style.display = tab==='mine' ? '' : 'none';
   document.getElementById('view-ranks').style.display = tab==='ranks' ? '' : 'none';
-  document.getElementById('countryRow').hidden = tab !== 'browse';
+  document.getElementById('catalogToolbar').hidden = tab !== 'browse';
   renderAll();
 }
 
@@ -1305,7 +1290,7 @@ document.querySelectorAll('.tab-btn').forEach(button => {
 // ---------- Master render ----------
 function renderAll(){
   renderRankChip();
-  renderCountryRow();
+  renderCatalogToolbar();
   if(activeTab==='browse') renderGrid();
   if(activeTab==='mine') renderMine();
   if(activeTab==='ranks') renderRanks();
