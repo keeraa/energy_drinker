@@ -22,6 +22,22 @@ const COUNTRIES = [
     ['Barinoff Energy Манго-Кокос','bottle'],
     ['BIZON Original','can'],
     ['BIZON Малина','can'],
+    ['Bombbar Energy Original','can'],
+    ['Bombbar Energy Апероль Спритц','can'],
+    ['Bombbar Energy Апельсин','can'],
+    ['Bombbar Energy Беллини','can'],
+    ['Bombbar Energy Вишня','can'],
+    ['Bombbar Energy Гранат','can'],
+    ['Bombbar Energy Грейпфрут','can'],
+    ['Bombbar Energy Джин-тоник','can'],
+    ['Bombbar Energy Клубника-земляника','can'],
+    ['Bombbar Energy Кола','can'],
+    ['Bombbar Energy Лайм-мята','can'],
+    ['Bombbar Energy Маракуйя','can'],
+    ['Bombbar Energy Маргарита','can'],
+    ['Bombbar Energy Мохито','can'],
+    ['Bombbar Energy Пина колада','can'],
+    ['Bombbar Energy Шампанское','can'],
     ['Black Energy Original','can'],
     ['Black Monster Original','can'],
     ['Black Monster The Doctor','can'],
@@ -380,10 +396,27 @@ const CURATED_PHOTOS = [
   { match:'Байкал Natural Energy Кофе-Лимон', exact:true, url:'assets/images/extra-081.jpg' },
   { match:'Брянскпиво Energy Original', exact:true, url:'assets/images/fixed-bryansk.png' },
   { match:'Крым Energy Original', exact:true, url:'assets/images/extra-083.jpg' },
-  { match:'НЕФТЬ Лайм', exact:true, url:'assets/images/fixed-neft-mango-coconut.png' },
-  { match:'НЕФТЬ Манго-Кокос', exact:true, url:'assets/images/fixed-neft-mango-coconut.png' },
+  { match:'НЕФТЬ Лайм', exact:true, url:'assets/images/neft-lime.jpg' },
+  { match:'НЕФТЬ Манго-Кокос', exact:true, url:'assets/images/neft-mango-coconut.jpg' },
   { match:'ОЗВЕРИН Original', exact:true, url:'assets/images/extra-086.png' },
   { match:'Энергия Первых Original', exact:true, url:'assets/images/extra-087.jpg' },
+  // BOMBBAR — актуальная линейка баночных энергетиков с сайта производителя.
+  { match:'Bombbar Energy Original', exact:true, url:'assets/images/bombbar-original.jpg' },
+  { match:'Bombbar Energy Апероль Спритц', exact:true, url:'assets/images/bombbar-aperol-spritz.jpg' },
+  { match:'Bombbar Energy Апельсин', exact:true, url:'assets/images/bombbar-orange.jpg' },
+  { match:'Bombbar Energy Беллини', exact:true, url:'assets/images/bombbar-bellini.jpg' },
+  { match:'Bombbar Energy Вишня', exact:true, url:'assets/images/bombbar-cherry.jpg' },
+  { match:'Bombbar Energy Гранат', exact:true, url:'assets/images/bombbar-pomegranate.jpg' },
+  { match:'Bombbar Energy Грейпфрут', exact:true, url:'assets/images/bombbar-grapefruit.jpg' },
+  { match:'Bombbar Energy Джин-тоник', exact:true, url:'assets/images/bombbar-gin-tonic.jpg' },
+  { match:'Bombbar Energy Клубника-земляника', exact:true, url:'assets/images/bombbar-strawberry-wild-strawberry.jpg' },
+  { match:'Bombbar Energy Кола', exact:true, url:'assets/images/bombbar-cola.jpg' },
+  { match:'Bombbar Energy Лайм-мята', exact:true, url:'assets/images/bombbar-lime-mint.jpg' },
+  { match:'Bombbar Energy Маракуйя', exact:true, url:'assets/images/bombbar-passion-fruit.jpg' },
+  { match:'Bombbar Energy Маргарита', exact:true, url:'assets/images/bombbar-margarita.jpg' },
+  { match:'Bombbar Energy Мохито', exact:true, url:'assets/images/bombbar-mojito.jpg' },
+  { match:'Bombbar Energy Пина колада', exact:true, url:'assets/images/bombbar-pina-colada.jpg' },
+  { match:'Bombbar Energy Шампанское', exact:true, url:'assets/images/bombbar-champagne.jpg' },
   // Локальные фотографии из каталога «Ленты» — точное соответствие позиции и вкуса.
   { match:'Adrenaline Rush Original', exact:true, url:'assets/images/501439.webp' },
   { match:'Adrenaline Rush Juicy Ягодная энергия', exact:true, url:'assets/images/501176.webp' },
@@ -550,7 +583,7 @@ function curatedPhotoFor(name){
 }
 
 const DRINK_BRANDS = [
-  'Adrenaline Rush','Barinoff Alligator','Barinoff Energy','Jaguar Wild Energy','Monster Energy',
+  'Adrenaline Rush','Barinoff Alligator','Barinoff Energy','Bombbar Energy','Jaguar Wild Energy','Monster Energy',
   'Tornado Max Energy','Tornado Energy','X-Turbo Energy','X-Turbo Focus Energy','BY БАСТА',
   'Power Torr','Flash Energy','Flash Up','LIT Energy','Volt Energy','Drive Me',
   'Aziano Energy','Coca-Cola Energy','Red Bull','Black Monster','Black Energy','Revo Energy',
@@ -918,7 +951,7 @@ function buildCard(countryKey, drink){
         <span class="label-flavor">${nameParts.flavor}</span>
       </div>
       <div class="card-rating" aria-hidden="true">★ ${rating}</div>
-      <div class="badge-check">✓</div>
+      ${activeTab === 'mine' ? '' : '<div class="badge-check">✓</div>'}
     </div>
     ${activeTab === 'mine' ? '<button class="top3-drag-handle" type="button" aria-label="Перетащить энергетик в топ-3" title="Перетащить в топ-3">⠿</button>' : ''}
   `;
@@ -1006,7 +1039,7 @@ function buildCard(countryKey, drink){
       longPressTimer = null;
     }
   };
-  if(photoUrl){
+  if(photoUrl && activeTab !== 'mine'){
     card.addEventListener('pointerdown', event => {
       if(event.target.closest('.top3-drag-handle')) return;
       if(event.pointerType === 'mouse' && event.button !== 0) return;
