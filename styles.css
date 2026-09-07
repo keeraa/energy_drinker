@@ -22,6 +22,7 @@
   }
   h1,h2,h3,.display{font-family:'Space Grotesk', sans-serif;}
   a{color:inherit;}
+  button{touch-action:manipulation;}
   :focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
 
   /* ---------- Header ---------- */
@@ -52,6 +53,8 @@
     background:transparent;
     color:inherit;
     cursor:zoom-in;
+    min-width:60px;
+    min-height:60px;
     -webkit-tap-highlight-color:transparent;
   }
   .brand-mark{
@@ -135,6 +138,7 @@
   }
   .tab-btn{
     flex:1;
+    min-height:44px;
     font-family:'Space Grotesk',sans-serif;
     font-weight:600;
     font-size:14px;
@@ -172,6 +176,7 @@
   .country-pill{
     display:flex;
     align-items:center;
+    min-height:44px;
     gap:7px;
     background:var(--panel);
     border:1px solid var(--line);
@@ -221,7 +226,7 @@
   }
   .catalog-search input{
     width:100%;
-    height:38px;
+    height:44px;
     border:1px solid var(--line);
     border-radius:999px;
     padding:0 14px 0 36px;
@@ -295,8 +300,10 @@
     background:rgba(5,7,10,.52);
   }
   .icon-wrap{
-    width:111px;
-    height:117px;
+    width:100%;
+    max-width:111px;
+    height:auto;
+    aspect-ratio:111 / 117;
     display:flex;
     align-items:flex-end;
     justify-content:center;
@@ -310,8 +317,8 @@
   }
   .icon-wrap svg{display:block;}
   .icon-wrap img.photo{
-    width:111px;
-    height:117px;
+    width:100%;
+    height:100%;
     object-fit:contain;
     object-position:center top;
     padding:9px 9px 20px;
@@ -322,8 +329,8 @@
     transform-origin:center 42%;
   }
   .no-photo{
-    width:111px;
-    height:117px;
+    width:100%;
+    height:100%;
     display:flex;
     align-items:center;
     justify-content:center;
@@ -434,6 +441,7 @@
     text-decoration:underline;
     text-underline-offset:3px;
     cursor:pointer;
+    min-height:44px;
   }
   .rating-skip:hover{color:var(--text);}
   .rating-remove{
@@ -445,6 +453,7 @@
     color:var(--text-dim);
     font:600 12px/1.2 'Inter',sans-serif;
     cursor:pointer;
+    min-height:44px;
   }
   .rating-remove.visible{display:block;}
   .rating-remove:hover{color:var(--coral);}
@@ -452,8 +461,8 @@
     position:absolute;
     top:10px;
     right:10px;
-    width:34px;
-    height:34px;
+    width:44px;
+    height:44px;
     border:0;
     border-radius:50%;
     background:transparent;
@@ -630,6 +639,7 @@
     .brand-row{flex-wrap:nowrap;gap:10px;}
     .brand{min-width:0;gap:8px;flex:1 1 auto;}
     .brand > div{min-width:0;}
+    .brand-mark-button{min-width:52px;min-height:52px;border-radius:11px;}
     .brand-mark{width:52px;height:52px;border-radius:11px;}
     .brand-title{font-size:19px;}
     .brand-sub{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:clamp(92px,28vw,122px);}
@@ -639,18 +649,18 @@
     .rank-count{font-size:10px;white-space:nowrap;}
     .rank-bar-track{width:82px;height:5px;}
     .country-row{padding:0 14px;display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:6px;align-items:center;}
-    .country-pill{gap:4px;padding:7px 9px 7px 7px;font-size:12px;}
+    .country-pill{gap:4px;min-height:44px;padding:7px 9px 7px 7px;font-size:12px;}
     .country-pill .flag{font-size:14px;}
     .country-pill .n{font-size:9px;padding:1px 4px;}
     .catalog-search{min-width:0;width:100%;margin-left:0;}
-    .catalog-search input{height:34px;padding-left:31px;padding-right:9px;font-size:12px;}
+    .catalog-search input{height:44px;padding-left:31px;padding-right:9px;font-size:12px;}
     .catalog-search svg{left:10px;width:14px;height:14px;}
     main{padding:10px 14px 0;}
     nav{bottom:max(8px, env(safe-area-inset-bottom));width:calc(100% - 16px);padding:6px;gap:4px;border-radius:18px;}
-    .tab-btn{white-space:nowrap;padding:6px 3px 5px;font-size:10.5px;gap:2px;flex-direction:column;line-height:1.1;}
+    .tab-btn{min-height:52px;white-space:nowrap;padding:6px 3px 5px;font-size:10.5px;gap:2px;flex-direction:column;line-height:1.1;}
     .tab-btn svg{width:17px;height:17px;}
     .rating-star{width:43px;height:43px;font-size:36px;}
-    .grid{grid-template-columns:repeat(2, minmax(0, 1fr));gap:6px 4px;}
+    .grid{grid-template-columns:repeat(3, minmax(0, 1fr));gap:6px 4px;}
     .card{padding-left:2px;padding-right:2px;}
     #view-ranks .section-head{margin-bottom:10px;align-items:flex-start;}
     #view-ranks .section-meta{display:none;}
@@ -666,6 +676,7 @@
     .rank-status{font-size:10px;}
   }
   @media (max-width:360px){
+    .brand-mark-button{min-width:46px;min-height:46px;}
     .brand-mark{width:46px;height:46px;}
     .brand-sub{display:none;}
     .rank-chip{min-height:46px;padding:6px 8px;}

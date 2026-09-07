@@ -898,7 +898,7 @@ function buildCard(countryKey, drink){
 
   const card = document.createElement('div');
   card.className = 'card' + (isTried ? ' tried' : '') + (rating ? ' has-rating' : '') + (isHidden ? ' is-hidden' : '');
-  card.draggable = true;
+  card.draggable = activeTab === 'mine';
   card.setAttribute('role', 'button');
   card.setAttribute('tabindex', '0');
   card.setAttribute('aria-pressed', isTried ? 'true' : 'false');
