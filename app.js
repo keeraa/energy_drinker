@@ -248,7 +248,7 @@ COUNTRIES.forEach(c => {
 });
 
 // Единый каталог; ключ исходного раздела сохраняется только в ID, чтобы не потерять
-// уже выставленные оценки, скрытые позиции и состав топ-3.
+// уже выставленные оценки, скрытые позиции и состав рейтинга.
 const CATALOG_ITEMS = COUNTRIES
   .flatMap(country => country.drinks.map(drink => ({ country, drink })))
   .sort((a, b) => a.drink[0].localeCompare(b.drink[0], 'ru', { sensitivity:'base' }));
@@ -619,8 +619,11 @@ const DRINK_INDEX = new Map(
 // ---------- State ----------
 let tried = new Set();       // set of ids
 let photos = {};             // id -> dataURL (base64, resized)
-let top3 = [null, null, null];
-let ratings = {};            // id -> 1..5
+const PODIUM_SIZE = 13;
+const ORIGINALS_SLOT = PODIUM_SIZE;
+let top3 = Array(PODIUM_SIZE).fill(null);
+let originals = [];
+let ratings = {};            // id -> 1..11
 let hidden = new Set();      // drinks the user does not plan to try
 let activeTab = 'browse';
 let searchQuery = '';
@@ -629,7 +632,20 @@ let lastRankMin = null;
 
 const ratingDialog = document.getElementById('ratingDialog');
 const ratingName = document.getElementById('ratingName');
-const ratingStars = Array.from(document.querySelectorAll('.rating-star'));
+const ratingOptions = document.getElementById('ratingStars');
+ratingOptions.style.cssText = 'display:flex;flex-wrap:wrap;justify-content:center;gap:6px';
+const ratingStars = Array.from({ length:11 }, (_, index) => {
+  const value = index + 1;
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'rating-star';
+  button.dataset.value = value;
+  button.style.fontSize = '1rem';
+  button.textContent = value === 11 ? '11/10' : String(value);
+  button.setAttribute('aria-label', `Поставить ${value} из 10`);
+  return button;
+});
+ratingOptions.replaceChildren(...ratingStars);
 const ratingClose = document.getElementById('ratingClose');
 const ratingRemove = document.getElementById('ratingRemove');
 const ratingSkip = document.getElementById('ratingSkip');
@@ -640,7 +656,7 @@ function paintRatingStars(value){
   ratingStars.forEach((star, index) => {
     const filled = index < value;
     star.classList.toggle('filled', filled);
-    star.textContent = filled ? '★' : '☆';
+    star.setAttribute('aria-pressed', String(index + 1 === value));
   });
 }
 
@@ -695,6 +711,7 @@ ratingRemove.addEventListener('click', async () => {
   tried.delete(removedId);
   delete ratings[removedId];
   top3 = top3.map(id => id === removedId ? null : id);
+  originals = originals.filter(id => id !== removedId);
   await Promise.all([saveTried(), saveRatings(), saveTop3()]);
   closeRatingDialog();
   renderAll();
@@ -709,6 +726,7 @@ ratingSkip.addEventListener('click', async () => {
     tried.delete(id);
     delete ratings[id];
     top3 = top3.map(topId => topId === id ? null : topId);
+    originals = originals.filter(originalId => originalId !== id);
   }
   await Promise.all([saveHidden(), saveTried(), saveRatings(), saveTop3()]);
   closeRatingDialog();
@@ -788,20 +806,25 @@ async function writeStoredJSON(key, value){
 }
 
 async function loadState(){
-  const [savedTried, savedPhotos, savedTop3, savedRatings, savedHidden] = await Promise.all([
+  const [savedTried, savedPhotos, savedTop3, savedRatings10, savedRatings5, savedHidden, savedOriginals] = await Promise.all([
     readStoredJSON('tried-ids', []),
     readStoredJSON('photos', {}),
     readStoredJSON('top3', [null, null, null]),
+    readStoredJSON('ratings-10', null),
     readStoredJSON('ratings', {}),
-    readStoredJSON('hidden-ids', [])
+    readStoredJSON('hidden-ids', []),
+    readStoredJSON('originals', [])
   ]);
 
   photos = savedPhotos && typeof savedPhotos === 'object' ? savedPhotos : {};
   ratings = {};
+  const savedRatings = savedRatings10 ?? savedRatings5;
   Object.entries(savedRatings && typeof savedRatings === 'object' ? savedRatings : {}).forEach(([rawId, rawValue]) => {
     const id = migrateId(rawId);
     const value = Number(rawValue);
-    if(DRINK_INDEX.has(id) && value >= 1 && value <= 5) ratings[id] = value;
+    if(DRINK_INDEX.has(id) && Number.isInteger(value) && value >= 1 && value <= (savedRatings10 === null ? 5 : 11)) {
+      ratings[id] = savedRatings10 === null ? value * 2 : value;
+    }
   });
 
   tried = new Set(
@@ -813,7 +836,7 @@ async function loadState(){
 
   const seenTop3 = new Set();
   const storedTop3 = Array.isArray(savedTop3) ? savedTop3 : [];
-  top3 = Array.from({ length:3 }, (_, index) => {
+  top3 = Array.from({ length:PODIUM_SIZE }, (_, index) => {
     const id = migrateId(storedTop3[index]);
     if(!id || !DRINK_INDEX.has(id) || seenTop3.has(id)) return null;
     seenTop3.add(id);
@@ -831,13 +854,17 @@ async function loadState(){
     top3 = top3.map(topId => topId === id ? null : topId);
   });
 
+  originals = Array.from(new Set((Array.isArray(savedOriginals) ? savedOriginals : []).map(migrateId)))
+    .filter(id => DRINK_INDEX.has(id) && !hidden.has(id) && !top3.includes(id));
   renderAll();
 }
 
 function saveTried(){ return writeStoredJSON('tried-ids', Array.from(tried)); }
 function savePhotos(){ return writeStoredJSON('photos', photos); }
-function saveTop3(){ return writeStoredJSON('top3', top3); }
-function saveRatings(){ return writeStoredJSON('ratings', ratings); }
+function saveTop3(){
+  return Promise.all([writeStoredJSON('top3', top3), writeStoredJSON('originals', originals)]);
+}
+function saveRatings(){ return writeStoredJSON('ratings-10', ratings); }
 function saveHidden(){ return writeStoredJSON('hidden-ids', Array.from(hidden)); }
 
 // Сжимаем загруженное фото до маленького квадрата, чтобы уложиться в лимиты хранилища
@@ -941,7 +968,7 @@ function buildCard(countryKey, drink){
   card.setAttribute('role', 'button');
   card.setAttribute('tabindex', '0');
   card.setAttribute('aria-pressed', isTried ? 'true' : 'false');
-  card.setAttribute('aria-label', `${name}: ${rating ? `оценка ${rating} из 5, изменить` : 'оценить'}`);
+  card.setAttribute('aria-label', `${name}: ${rating ? `оценка ${rating} из 10, изменить` : 'оценить'}`);
 
   // Показываем только реальное найденное фото. Если его нет — честный статус.
   const photoScale = PHOTO_SCALE[name] || 1;
@@ -956,10 +983,10 @@ function buildCard(countryKey, drink){
         <span class="label-brand">${nameParts.brand}</span>
         <span class="label-flavor">${nameParts.flavor}</span>
       </div>
-      <div class="card-rating" aria-hidden="true">★ ${rating}</div>
+      <div class="card-rating" aria-hidden="true">★ ${rating}/10</div>
       ${activeTab === 'mine' ? '' : '<div class="badge-check">✓</div>'}
     </div>
-    ${activeTab === 'mine' ? '<button class="top3-drag-handle" type="button" aria-label="Перетащить энергетик в топ-3" title="Перетащить в топ-3">⠿</button>' : ''}
+    ${activeTab === 'mine' ? '<button class="top3-drag-handle" type="button" aria-label="Перетащить энергетик в рейтинг" title="Перетащить в рейтинг">⠿</button>' : ''}
   `;
   card.addEventListener('dragstart', event => {
     event.dataTransfer.setData('text/plain', id);
@@ -1171,9 +1198,11 @@ function drinkById(id){
 }
 
 async function placeInTop3(index, id){
-  if(index < 0 || index > 2 || !drinkById(id)) return;
+  if(index < 0 || index > ORIGINALS_SLOT || !drinkById(id) || hidden.has(id)) return;
   top3 = top3.map(existingId => existingId === id ? null : existingId);
-  top3[index] = id;
+  originals = originals.filter(originalId => originalId !== id);
+  if(index === ORIGINALS_SLOT) originals.push(id);
+  else top3[index] = id;
   await saveTop3();
   renderTop3();
 }
@@ -1182,21 +1211,31 @@ function renderTop3(){
   const grid = document.getElementById('podiumGrid');
   if(!grid) return;
   grid.innerHTML = '';
-  [0,1,2].forEach(index => {
+  [...top3, null].forEach((id, index) => {
     const slot = document.createElement('div');
-    slot.className = 'podium-slot' + (top3[index] ? ' filled' : '');
-    const found = top3[index] && drinkById(top3[index]);
-    if(found){
+    slot.className = 'podium-slot' + ((id || (index === ORIGINALS_SLOT && originals.length)) ? ' filled' : '');
+    const label = document.createElement('div');
+    label.className = 'podium-place';
+    label.textContent = index === ORIGINALS_SLOT ? 'Опущенные' : `${index + 1} место`;
+    if(index < 3) {
+      label.textContent = `${['🥇', '🥈', '🥉'][index]} ${label.textContent}`;
+    }
+    if(index === ORIGINALS_SLOT) slot.style.gridColumn = '1 / -1';
+    slot.appendChild(label);
+    const entries = index === ORIGINALS_SLOT ? originals : (id ? [id] : []);
+    entries.forEach(entryId => {
+      const found = drinkById(entryId);
       const [name] = found.drink;
       const parts = drinkNameParts(name);
-      const photo = photos[top3[index]] || curatedPhotoFor(name);
+      const photo = photos[entryId] || curatedPhotoFor(name);
       const item = document.createElement('div');
       item.className = 'podium-card';
       item.draggable = true;
       item.innerHTML = `${photo ? `<img src="${photo}" alt="${name}" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : '<div class="no-photo">Фото нет</div>'}<div class="podium-name">${parts.brand}</div><div class="podium-flavor">${parts.flavor}</div>`;
-      item.addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', top3[index]));
+      item.addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', entryId));
       slot.appendChild(item);
-    }else{
+    });
+    if(!entries.length){
       const empty = document.createElement('div');
       empty.className = 'podium-empty';
       empty.textContent = 'Перетащите сюда энергетик';
